@@ -1,31 +1,4 @@
-# Exact versions the results in reports/metrics.json were produced with (Python 3.11).
-# Install with: pip install -r requirements.txt && pip install -e . --no-deps
-
-# Core
-numpy==2.4.6
-pandas==3.1.0
-scikit-learn==1.9.1
-scipy==1.17.1
-joblib==1.6.0
-pandera==0.35.0
-
-# Modeling
-lightgbm==4.7.0
-optuna==5.0.0
-shap==0.51.0
-lifelines==0.30.0
-scikit-survival==0.28.0
-
-# Plotting
-matplotlib==3.11.2
-
-# Notebooks
-ipykernel==7.4.0
-nbconvert==7.17.2
-nbclient==0.11.0
-nbformat==5.11.1
-
-# Dev
-pytest==9.2.0
-ruff==0.17.3
-black[jupyter]==26.10.1
+# Full development environment. Install with:
+#   pip install -r requirements.txt && pip install -e . --no-deps
+# Runtime-only dependencies (Docker images, Streamlit Cloud) live in requirements/serve.txt.
+-r requirements/dev.txt
