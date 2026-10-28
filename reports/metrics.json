@@ -1,0 +1,252 @@
+{
+  "run": {
+    "version": "20261028T085142Z-6387247",
+    "created_at": "2026-10-28T08:52:24+00:00",
+    "git_sha": "638724719818f809fc15f5b7d24c895e8dc7fb39",
+    "git_dirty": false,
+    "data_sha256": "16320c9c1ec72448db59aa0a26a0b95401046bef5d02fd3aeb906448e3055e91",
+    "python": "3.11.17",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.1.0",
+      "scikit-learn": "1.9.1",
+      "lightgbm": "4.7.0",
+      "optuna": "5.0.0",
+      "lifelines": "0.30.0",
+      "scikit-survival": "0.28.0"
+    }
+  },
+  "config": {
+    "seed": 42,
+    "split": {
+      "test_size": 0.2,
+      "n_splits": 5
+    },
+    "tuning": {
+      "n_trials": 40,
+      "metric": "roc_auc"
+    },
+    "classification": {
+      "selection_metric": "roc_auc",
+      "calibration_methods": [
+        "none",
+        "sigmoid",
+        "isotonic"
+      ],
+      "n_bootstrap": 1000
+    },
+    "survival": {
+      "cox_penalizer": 0.01,
+      "cox_strata": [
+        "Contract"
+      ],
+      "rsf_n_estimators": 300,
+      "rsf_min_samples_leaf": 15,
+      "rsf_max_features": "sqrt",
+      "churn_horizon_months": 12
+    },
+    "business": {
+      "horizon_months": 12,
+      "offer_cost": 50.0,
+      "offer_success_rate": 0.3
+    }
+  },
+  "data": {
+    "n_rows": 7043,
+    "n_train": 5634,
+    "n_test": 1409,
+    "churn_rate_train": 0.2653532126375577,
+    "churn_rate_test": 0.2654364797728886
+  },
+  "classification": {
+    "cv": {
+      "logreg": {
+        "roc_auc": {
+          "mean": 0.8455067890208227,
+          "std": 0.01392904694317391
+        },
+        "pr_auc": {
+          "mean": 0.6590997681658317,
+          "std": 0.021051573687870685
+        },
+        "brier": {
+          "mean": 0.13533674021426184,
+          "std": 0.005811917122281425
+        },
+        "log_loss": {
+          "mean": 0.41735198631542403,
+          "std": 0.01387341440791669
+        }
+      },
+      "lgbm_default": {
+        "roc_auc": {
+          "mean": 0.8345791644045519,
+          "std": 0.009282910408769121
+        },
+        "pr_auc": {
+          "mean": 0.636905142165911,
+          "std": 0.02655265730798424
+        },
+        "brier": {
+          "mean": 0.14223067670042738,
+          "std": 0.006505044157143712
+        },
+        "log_loss": {
+          "mean": 0.4392434485825166,
+          "std": 0.01642547999842158
+        }
+      },
+      "lgbm_tuned": {
+        "roc_auc": {
+          "mean": 0.8495267190943936,
+          "std": 0.012764098737109625
+        },
+        "pr_auc": {
+          "mean": 0.6669714400207025,
+          "std": 0.02219581627018167
+        },
+        "brier": {
+          "mean": 0.1336708608053933,
+          "std": 0.005833351174640942
+        },
+        "log_loss": {
+          "mean": 0.41221760209158126,
+          "std": 0.013976274230831235
+        }
+      }
+    },
+    "champion": "lgbm_tuned",
+    "tuning": {
+      "n_trials": 40,
+      "metric": "roc_auc",
+      "best_cv_score": 0.8495267190943936,
+      "best_params": {
+        "n_estimators": 200,
+        "learning_rate": 0.03237070835904903,
+        "num_leaves": 5,
+        "min_child_samples": 163,
+        "subsample": 0.6161539757636211,
+        "colsample_bytree": 0.6747758337270477,
+        "reg_lambda": 1.2015860630090227,
+        "reg_alpha": 0.008581731084593196,
+        "subsample_freq": 1
+      }
+    },
+    "calibration": {
+      "oof_brier": {
+        "none": 0.13367184434756108,
+        "sigmoid": 0.13374516087557686,
+        "isotonic": 0.13376886502312238
+      },
+      "selected": "none"
+    },
+    "test": {
+      "final": {
+        "roc_auc": {
+          "value": 0.8475664574130047,
+          "ci_low": 0.8258316504665765,
+          "ci_high": 0.8675792698741761
+        },
+        "pr_auc": {
+          "value": 0.6664814911823271,
+          "ci_low": 0.6157294052250891,
+          "ci_high": 0.7131250462967972
+        },
+        "brier": {
+          "value": 0.1345481445838294,
+          "ci_low": 0.12417368125183943,
+          "ci_high": 0.14430781457145317
+        },
+        "log_loss": {
+          "value": 0.41373257864826113,
+          "ci_low": 0.38656534978677937,
+          "ci_high": 0.4397173265464382
+        }
+      },
+      "uncalibrated": {
+        "roc_auc": 0.8475664574130047,
+        "pr_auc": 0.6664814911823271,
+        "brier": 0.1345481445838294,
+        "log_loss": 0.41373257864826113
+      }
+    }
+  },
+  "business": {
+    "assumptions": {
+      "horizon_months": 12,
+      "offer_cost": 50.0,
+      "offer_success_rate": 0.3
+    },
+    "threshold": 0.18,
+    "train_oof": {
+      "profit": 220904.41999999998,
+      "share_targeted": 0.49503017394391197
+    },
+    "test": {
+      "n_customers": 1409,
+      "n_targeted": 701,
+      "share_targeted": 0.49751596877217885,
+      "churners_reached": 325,
+      "churners_total": 374,
+      "profit": 51312.56,
+      "profit_target_everyone": 27523.64,
+      "hindsight_best_threshold": 0.19,
+      "hindsight_best_profit": 51884.07999999999,
+      "revenue_at_risk_total": 330805.88989704265,
+      "revenue_at_risk_targeted": 297503.24468087335,
+      "forecast_profit": 54200.97340426199,
+      "value_aware_n_targeted": 614,
+      "value_aware_churners_reached": 294,
+      "value_aware_profit": 53338.219999999994
+    }
+  },
+  "survival": {
+    "n_train": 5626,
+    "n_test": 1406,
+    "dropped_zero_tenure": 11,
+    "models": {
+      "Kaplan-Meier (no covariates)": {
+        "c_index": 0.5,
+        "integrated_brier_score": 0.18341988709902285
+      },
+      "Cox PH": {
+        "c_index": 0.8546036838290214,
+        "integrated_brier_score": 0.0841413010770795
+      },
+      "Cox PH (stratified by contract)": {
+        "c_index": 0.8554580808039048,
+        "integrated_brier_score": 0.08289276434523508
+      },
+      "Random survival forest": {
+        "c_index": 0.8446416907138073,
+        "integrated_brier_score": 0.09146707949163733
+      }
+    },
+    "primary_model": "Cox PH (stratified by contract)",
+    "ph_test": {
+      "ph_test_cox": {
+        "n_covariates": 22,
+        "n_violations_p<0.05": 6,
+        "violations": [
+          "Contract_One_year",
+          "PaymentMethod_Credit_card_automatic",
+          "MultipleLines_Yes",
+          "Partner_Yes",
+          "TechSupport_Yes",
+          "PaymentMethod_Bank_transfer_automatic"
+        ]
+      },
+      "ph_test_cox_stratified": {
+        "n_covariates": 20,
+        "n_violations_p<0.05": 5,
+        "violations": [
+          "PaymentMethod_Credit_card_automatic",
+          "MultipleLines_Yes",
+          "Partner_Yes",
+          "TechSupport_Yes",
+          "PaymentMethod_Bank_transfer_automatic"
+        ]
+      }
+    }
+  }
+}
