@@ -205,7 +205,7 @@ def plot_log_minus_log(
         )
     ax.set_xlabel("log(tenure)")
     ax.set_ylabel("log(-log S(t))")
-    ax.legend(loc="lower right")
+    ax.legend(loc="upper left")
     return ax
 
 
@@ -367,6 +367,9 @@ def plot_hazard_ratios(summary: pd.DataFrame, ax: plt.Axes | None = None) -> plt
     ax.scatter(s["exp(coef)"], y, color=BLUE, s=36, zorder=3, edgecolor=SURFACE, linewidth=1.5)
     ax.axvline(1, color=MUTED, linewidth=1)
     ax.set_xscale("log")
+    ticks = [t for t in (0.05, 0.1, 0.25, 0.5, 1, 2, 4) if lo.min() / 1.5 <= t <= hi.max() * 1.5]
+    ax.set_xticks(ticks, [f"{t:g}" for t in ticks])
+    ax.xaxis.set_minor_locator(plt.NullLocator())
     ax.set_yticks(y, s.index)
     ax.tick_params(axis="y", length=0)
     ax.grid(axis="y", visible=False)
