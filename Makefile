@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install data train test lint format notebooks all clean
+.PHONY: help install data train bundle test lint format notebooks all clean
 
 VENV      ?= .venv
 PYTHON    ?= $(VENV)/bin/python
@@ -23,6 +23,9 @@ data: $(RAW_DATA)  ## Download the raw dataset (verified by SHA-256) into data/r
 
 train: $(RAW_DATA)  ## Train all models; write versioned artifacts + metrics.json to models/
 	$(PYTHON) -m churn.train
+
+bundle:  ## Export the latest training run to the committed deployment bundle (model_bundle/)
+	$(PYTHON) -m churn.bundle
 
 test:  ## Run the test suite (offline, synthetic data)
 	$(PYTHON) -m pytest

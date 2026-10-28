@@ -7,7 +7,7 @@ import pandera.errors
 import pytest
 from sklearn.linear_model import LogisticRegression
 
-from churn.bundle import MANIFEST, verify_bundle
+from churn.bundle import BUNDLE_DIR, MANIFEST, verify_bundle
 from churn.inference import FEATURE_COLUMNS, ChurnPredictor
 from churn.train import make_logistic_pipeline
 
@@ -115,3 +115,11 @@ def test_horizon_summaries_are_null_beyond_the_observation_window(predictor, cus
     by_horizon = {p["months_ahead"]: p["probability"] for p in surv["survival_probability"]}
     assert by_horizon[3] is not None and by_horizon[12] is None
     assert surv["curve"] is None  # only returned on request
+
+
+@pytest.mark.skipif(not BUNDLE_DIR.exists(), reason="no committed model bundle")
+def test_committed_bundle_loads_with_pinned_libraries(customer):
+    """The repository's model_bundle/ must load (and verify) with the pinned versions."""
+    assert verify_bundle(BUNDLE_DIR) == []
+    (pred,) = ChurnPredictor.load(BUNDLE_DIR).predict([customer])
+    assert 0 <= pred["churn_probability"] <= 1
