@@ -97,6 +97,18 @@ def numeric_feature_names(include_tenure: bool = True) -> list[str]:
     return list(BASE_NUMERIC_COLS)
 
 
+def source_feature(column: str) -> str:
+    """Raw attribute a model column comes from: ``Contract_Two_year`` -> ``Contract``.
+
+    SHAP values are additive, so summing them over the dummies of one attribute gives
+    that attribute's total contribution (one bar per attribute instead of per level).
+    """
+    for col in CATEGORY_LEVELS:
+        if column.startswith(f"{col}_"):
+            return col
+    return column
+
+
 def _clean_feature_name(feature: str, category: object) -> str:
     """``PaymentMethod`` + ``Bank transfer (automatic)`` -> ``PaymentMethod_Bank_transfer_automatic``.
 
