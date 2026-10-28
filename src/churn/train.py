@@ -412,7 +412,7 @@ def run_metadata(version_name: str, data_path: Path | None) -> dict:
         "version": version_name,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_sha": _git("rev-parse", "HEAD"),
-        "git_dirty": bool(_git("status", "--porcelain")),
+        "git_dirty": bool(_git("status", "--porcelain", "--untracked-files=no")),
         "data_sha256": sha256_of(data_path) if data_path and Path(data_path).exists() else None,
         "python": platform.python_version(),
         "packages": packages,
