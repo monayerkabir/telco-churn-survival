@@ -16,7 +16,6 @@ dependencies = [
     "pandas>=2.2",
     "scikit-learn>=1.6",
     "lightgbm>=4.5",
-    "optuna>=4.0",
     "shap>=0.46",
     "lifelines>=0.29",
     "scikit-survival>=0.24",
@@ -26,8 +25,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+serve = ["fastapi>=0.110", "pydantic>=2.6", "uvicorn>=0.29", "streamlit>=1.40", "altair>=5"]
+training = ["optuna>=4.0"]
 notebooks = ["ipykernel", "nbconvert", "nbclient", "nbformat"]
-dev = ["pytest>=8", "ruff>=0.6", "black[jupyter]>=24"]
+dev = ["pytest>=8", "httpx2>=2.16", "ruff>=0.6", "black[jupyter]>=24"]
 
 [project.scripts]
 churn-train = "churn.train:main"
@@ -37,6 +38,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]  # api/ and app/ live at the repository root
 addopts = "-q"
 filterwarnings = [
     # Third-party deprecation noise that is not actionable from this project.
@@ -52,7 +54,7 @@ target-version = ["py311"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["src", "tests", "scripts"]
+src = [".", "src", "tests", "scripts"]
 
 [tool.ruff.lint]
 select = [
@@ -69,6 +71,7 @@ ignore = ["E501"]  # line length is enforced by black
 
 [tool.ruff.lint.per-file-ignores]
 "notebooks/*.ipynb" = ["E402", "B018"]  # imports after markdown cells; bare expressions display values
+"app/streamlit_app.py" = ["E402"]  # imports follow the sys.path setup for Streamlit Cloud
 
 [tool.ruff.lint.isort]
-known-first-party = ["churn"]
+known-first-party = ["churn", "api", "app"]

@@ -1,0 +1,2 @@
+# Streamlit Community Cloud installs this file (it sits next to the entrypoint).
+-r ../requirements/serve.txt

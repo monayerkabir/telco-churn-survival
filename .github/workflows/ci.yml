@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  lint:
+    name: Lint (ruff + black)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install the pinned linters
+        run: pip install $(grep -E '^(ruff|black)' requirements/dev.txt)
+      - run: make lint PYTHON=python
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements/*.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -e . --no-deps
+      - run: make test PYTHON=python
+
+  train:
+    name: Train (small run) and serve the result
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set artifact paths  # the runner context is not available in job-level env
+        run: |
+          echo "MODELS_DIR=$RUNNER_TEMP/models" >> "$GITHUB_ENV"
+          echo "BUNDLE_DIR=$RUNNER_TEMP/bundle" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements/*.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -e . --no-deps
+      - name: Download data (SHA-256 verified)
+        run: make data PYTHON=python
+      - name: Train with a 3-trial Optuna budget
+        run: python -m churn.train --n-trials 3 --models-dir "$MODELS_DIR" --no-report
+      - name: Export the deployment bundle
+        run: python -m churn.bundle --source "$MODELS_DIR/$(cat "$MODELS_DIR/LATEST")" --dest "$BUNDLE_DIR"
+      - name: Serve the fresh bundle through the API
+        run: |
+          python - <<'EOF'
+          import json, os
+          from fastapi.testclient import TestClient
+          from api.main import create_app
+          from api.schemas import EXAMPLE_CUSTOMER
+
+          with TestClient(create_app(os.environ["BUNDLE_DIR"])) as client:
+              client.get("/health").raise_for_status()
+              response = client.post("/predict", json=EXAMPLE_CUSTOMER)
+              response.raise_for_status()
+              print(json.dumps(response.json()["decision"], indent=2))
+          EOF
+      - name: Summarise metrics
+        run: |
+          python - <<'EOF'
+          import json, os
+          from pathlib import Path
+
+          models = Path(os.environ["MODELS_DIR"])
+          m = json.loads((models / (models / "LATEST").read_text().strip() / "metrics.json").read_text())
+          test = m["classification"]["test"]["final"]
+          surv = m["survival"]["models"][m["survival"]["primary_model"]]
+          rows = [
+              ("Champion", m["classification"]["champion"]),
+              ("Test ROC-AUC", f"{test['roc_auc']['value']:.3f}"),
+              ("Test PR-AUC", f"{test['pr_auc']['value']:.3f}"),
+              ("Survival model", m["survival"]["primary_model"]),
+              ("C-index", f"{surv['c_index']:.3f}"),
+              ("Integrated Brier", f"{surv['integrated_brier_score']:.3f}"),
+              ("Retention threshold", m["business"]["threshold"]),
+          ]
+          lines = ["### Small training run (3 Optuna trials)", "", "| | |", "|---|---|"]
+          lines += [f"| {k} | {v} |" for k, v in rows]
+          Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text("\n".join(lines) + "\n")
+          EOF
+      - uses: actions/upload-artifact@v7
+        with:
+          name: small-run-metrics
+          path: |
+            ${{ env.MODELS_DIR }}/*/metrics.json
+            ${{ env.BUNDLE_DIR }}/manifest.json
+          retention-days: 7
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build the api image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: api
+          tags: telco-churn-api:ci
+          load: true
+          cache-from: type=gha,scope=churn
+          cache-to: type=gha,scope=churn,mode=max
+      - name: Build the app image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: app
+          tags: telco-churn-app:ci
+          load: true
+          cache-from: type=gha,scope=churn
+      - name: Smoke-test both containers
+        run: |
+          docker run -d --name api -p 8000:8000 telco-churn-api:ci
+          docker run -d --name app -p 8501:8501 telco-churn-app:ci
+
+          wait_for() {  # url, seconds
+            for _ in $(seq 1 "$2"); do curl -fsS "$1" >/dev/null 2>&1 && return 0; sleep 1; done
+            return 1
+          }
+          wait_for http://localhost:8000/health 90 || { docker logs api; exit 1; }
+          wait_for http://localhost:8501/_stcore/health 90 || { docker logs app; exit 1; }
+
+          curl -fsS http://localhost:8000/health
+          docker exec api python -c "import json; from api.schemas import EXAMPLE_CUSTOMER as c; print(json.dumps(c))" > customer.json
+          curl -fsS -X POST http://localhost:8000/predict -H 'content-type: application/json' --data @customer.json \
+            | python3 -c "import json, sys; p = json.load(sys.stdin); assert 0 <= p['churn_probability'] <= 1; print('churn probability', p['churn_probability'])"
+
+          # The images' own HEALTHCHECKs must turn healthy too.
+          for c in api app; do
+            for _ in $(seq 1 60); do
+              [ "$(docker inspect -f '{{.State.Health.Status}}' "$c")" = healthy ] && break
+              sleep 2
+            done
+            echo "$c: $(docker inspect -f '{{.State.Health.Status}}' "$c")"
+            [ "$(docker inspect -f '{{.State.Health.Status}}' "$c")" = healthy ]
+          done
+      - name: Container logs
+        if: always()
+        run: |
+          docker logs api || true
+          docker logs app || true

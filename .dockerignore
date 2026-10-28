@@ -1,0 +1,19 @@
+# The Dockerfile copies what each image needs explicitly; this keeps the build context
+# small and keeps local data, artifacts and environments out of it.
+.git
+.github
+.venv
+venv
+data
+models
+notebooks
+reports
+tests
+**/__pycache__
+**/*.py[cod]
+**/.ipynb_checkpoints
+.pytest_cache
+.ruff_cache
+*.egg-info
+build
+dist

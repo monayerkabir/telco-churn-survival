@@ -1,0 +1,35 @@
+# docker compose up --build
+#   API: http://localhost:8000/docs     App: http://localhost:8501
+#
+# Both services load the committed model_bundle/. To serve a fresh training run instead,
+# mount it and point CHURN_MODEL_DIR at it, e.g. for the api service:
+#     volumes: ["./models/<version>:/models:ro"]
+#     environment: {CHURN_MODEL_DIR: /models}
+
+services:
+  api:
+    build:
+      context: .
+      target: api
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.11-slim}
+    image: telco-churn-api:latest
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      target: app
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.11-slim}
+    image: telco-churn-app:latest
+    ports:
+      - "8501:8501"
+    volumes:
+      - churn-data:/app/data  # keeps the downloaded dataset across restarts
+    restart: unless-stopped
+
+volumes:
+  churn-data:

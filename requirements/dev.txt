@@ -1,0 +1,17 @@
+# Everything needed to train, run the notebooks, test and lint (Python 3.11).
+-r serve.txt
+
+# Training
+optuna==5.0.0
+
+# Notebooks
+ipykernel==7.4.0
+nbconvert==7.17.2
+nbclient==0.11.0
+nbformat==5.11.1
+
+# Tests and linting
+pytest==9.2.0
+httpx2==2.16.0  # starlette.testclient backend
+ruff==0.17.3
+black[jupyter]==26.10.1

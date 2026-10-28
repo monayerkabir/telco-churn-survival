@@ -1,11 +1,11 @@
 .DEFAULT_GOAL := help
-.PHONY: help install data train test lint format notebooks all clean
+.PHONY: help install data train bundle api app docker up test lint format notebooks all clean
 
 VENV      ?= .venv
 PYTHON    ?= $(VENV)/bin/python
 RAW_DATA  := data/raw/Telco-Customer-Churn.csv
 NOTEBOOKS := $(sort $(wildcard notebooks/*.ipynb))
-LINT_PATHS := src tests scripts notebooks
+LINT_PATHS := src api app tests scripts notebooks
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
@@ -23,6 +23,21 @@ data: $(RAW_DATA)  ## Download the raw dataset (verified by SHA-256) into data/r
 
 train: $(RAW_DATA)  ## Train all models; write versioned artifacts + metrics.json to models/
 	$(PYTHON) -m churn.train
+
+bundle:  ## Export the latest training run to the committed deployment bundle (model_bundle/)
+	$(PYTHON) -m churn.bundle
+
+api:  ## Serve the API on http://localhost:8000 (docs at /docs) from model_bundle/
+	$(PYTHON) -m uvicorn api.main:app --reload --port 8000
+
+app:  ## Run the Streamlit app on http://localhost:8501 from model_bundle/
+	$(PYTHON) -m streamlit run app/streamlit_app.py
+
+docker:  ## Build the api and app images
+	docker compose build
+
+up:  ## Run the API (:8000) and app (:8501) in containers
+	docker compose up --build
 
 test:  ## Run the test suite (offline, synthetic data)
 	$(PYTHON) -m pytest

@@ -10,7 +10,7 @@
 6. Versioned artifacts and ``metrics.json`` written to ``models/<version>/``.
 
 Usage:
-    python -m churn.train [--n-trials N] [--models-dir DIR]
+    python -m churn.train [--n-trials N] [--models-dir DIR] [--no-report]
 """
 
 from __future__ import annotations
@@ -248,7 +248,14 @@ def train_classification(
         "calibration": {"oof_brier": oof_brier, "selected": calibration_method},
         "test": test_metrics,
     }
-    models = {"classifier": classifier, "base_models": base_models}
+    # Mean of each model input over the training set: the SHAP baseline needed to explain a
+    # linear champion at inference time (tree models are explained without background data).
+    feature_means = base_models[champion_key]["preprocess"].transform(X_train).mean()
+    models = {
+        "classifier": classifier,
+        "base_models": base_models,
+        "feature_means": {k: float(v) for k, v in feature_means.items()},
+    }
     tables = {
         "cv_results": cv_results,
         "optuna_trials": study.trials_dataframe(attrs=("number", "value", "params", "state")),
@@ -468,6 +475,7 @@ def run(
 
     joblib.dump(clf_models["classifier"], out / "classifier.joblib")
     joblib.dump(clf_models["base_models"], out / "base_classifiers.joblib")
+    (out / "feature_means.json").write_text(json.dumps(clf_models["feature_means"], indent=2))
     joblib.dump(surv["models"], out / "survival_models.joblib", compress=3)
     tables = {
         **{k: v for k, v in clf_tables.items() if k != "test_predictions"},
@@ -492,6 +500,11 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Train churn classification + survival models.")
     parser.add_argument("--n-trials", type=int, default=None, help="override the Optuna budget")
     parser.add_argument("--models-dir", type=Path, default=MODELS_DIR)
+    parser.add_argument(
+        "--no-report",
+        action="store_true",
+        help="don't copy metrics.json to reports/ (for throwaway runs, e.g. in CI)",
+    )
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -500,7 +513,8 @@ def main(argv: list[str] | None = None) -> None:
         cfg = dataclasses.replace(
             cfg, tuning=dataclasses.replace(cfg.tuning, n_trials=args.n_trials)
         )
-    run(load_clean_data(), cfg, models_dir=args.models_dir)
+    reports_dir = None if args.no_report else REPORTS_DIR
+    run(load_clean_data(), cfg, models_dir=args.models_dir, reports_dir=reports_dir)
 
 
 if __name__ == "__main__":
