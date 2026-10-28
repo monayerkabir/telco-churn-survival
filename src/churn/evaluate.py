@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.calibration import calibration_curve
 from sklearn.metrics import average_precision_score, brier_score_loss, log_loss, roc_auc_score
-from sksurv.metrics import concordance_index_censored, integrated_brier_score
+from sksurv.metrics import brier_score, concordance_index_censored, integrated_brier_score
 from sksurv.util import Surv
 
 from churn.config import CONFIG
@@ -112,3 +112,17 @@ def integrated_brier(
     y_train = Surv.from_arrays(np.asarray(event_train, bool), np.asarray(duration_train, float))
     y_test = Surv.from_arrays(np.asarray(event_test, bool), np.asarray(duration_test, float))
     return float(integrated_brier_score(y_train, y_test, surv_at_times, times))
+
+
+def brier_over_time(
+    duration_train,
+    event_train,
+    duration_test,
+    event_test,
+    surv_at_times: np.ndarray,
+    times: np.ndarray,
+) -> np.ndarray:
+    """Time-dependent Brier score at each of ``times`` (the integrand of the IBS)."""
+    y_train = Surv.from_arrays(np.asarray(event_train, bool), np.asarray(duration_train, float))
+    y_test = Surv.from_arrays(np.asarray(event_test, bool), np.asarray(duration_test, float))
+    return brier_score(y_train, y_test, surv_at_times, times)[1]

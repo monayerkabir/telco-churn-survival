@@ -75,6 +75,10 @@ def test_survival_summaries_on_known_curve():
     # memoryless: residual life from t0 is a geometric sum over the remaining window
     np.testing.assert_allclose(remaining, [(1 - 0.9 ** (72 - t)) / 0.1 for t in t0])
 
+    next12 = survival.expected_months_within(surv, t0, horizon=12)
+    np.testing.assert_allclose(next12[:2], (1 - 0.9**12) / 0.1)  # same for every t0
+    assert np.isnan(next12[2])
+
 
 def test_training_pipeline_end_to_end_is_reproducible(clean_df, tmp_path):
     out1 = run(clean_df, TINY, models_dir=tmp_path / "models", reports_dir=None, data_path=None)

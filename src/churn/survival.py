@@ -192,10 +192,26 @@ def expected_remaining_tenure(
     """Restricted mean residual tenure: E[min(T, tau) - t0 | T > t0], in months.
 
     Restricted to the 72-month observation window because the curves cannot be
-    extrapolated beyond the longest observed tenure.
+    extrapolated beyond the longest observed tenure. The window shrinks as t0 grows, so
+    long-tenure customers get small values by construction; use
+    :func:`expected_months_within` to compare customers on a common horizon.
     """
     cond = conditional_survival(surv, current_tenure)
     return np.nansum(cond[:, :tau], axis=1)
+
+
+def expected_months_within(surv: np.ndarray, current_tenure, horizon: int) -> np.ndarray:
+    """E[min(T - t0, horizon) | T > t0]: expected active months over the next ``horizon``.
+
+    Unlike :func:`expected_remaining_tenure`, the window has the same length for every
+    customer, so values are comparable across tenures (and times MonthlyCharges give
+    expected revenue). NaN if t0 + horizon > 72.
+    """
+    t0 = np.asarray(current_tenure, dtype=int)
+    cond = conditional_survival(surv, t0)
+    window = (TIME_GRID[None, :] >= t0[:, None]) & (TIME_GRID[None, :] < (t0 + horizon)[:, None])
+    out = np.where(window, cond, 0.0).sum(axis=1)
+    return np.where(t0 + horizon <= MAX_TENURE, out, np.nan)
 
 
 def churn_probability_within(surv: np.ndarray, current_tenure, horizon: int) -> np.ndarray:

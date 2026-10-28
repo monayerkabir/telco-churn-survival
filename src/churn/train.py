@@ -344,6 +344,9 @@ def train_survival(
             "expected_remaining_tenure": survival.expected_remaining_tenure(
                 surv, s_test[DURATION_COL]
             ),
+            f"expected_months_next_{horizon}m": survival.expected_months_within(
+                surv, s_test[DURATION_COL], horizon
+            ),
             f"p_churn_{horizon}m_survival": survival.churn_probability_within(
                 surv, s_test[DURATION_COL], horizon
             ),
