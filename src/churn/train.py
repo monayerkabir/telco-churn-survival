@@ -248,7 +248,14 @@ def train_classification(
         "calibration": {"oof_brier": oof_brier, "selected": calibration_method},
         "test": test_metrics,
     }
-    models = {"classifier": classifier, "base_models": base_models}
+    # Mean of each model input over the training set: the SHAP baseline needed to explain a
+    # linear champion at inference time (tree models are explained without background data).
+    feature_means = base_models[champion_key]["preprocess"].transform(X_train).mean()
+    models = {
+        "classifier": classifier,
+        "base_models": base_models,
+        "feature_means": {k: float(v) for k, v in feature_means.items()},
+    }
     tables = {
         "cv_results": cv_results,
         "optuna_trials": study.trials_dataframe(attrs=("number", "value", "params", "state")),
@@ -468,6 +475,7 @@ def run(
 
     joblib.dump(clf_models["classifier"], out / "classifier.joblib")
     joblib.dump(clf_models["base_models"], out / "base_classifiers.joblib")
+    (out / "feature_means.json").write_text(json.dumps(clf_models["feature_means"], indent=2))
     joblib.dump(surv["models"], out / "survival_models.joblib", compress=3)
     tables = {
         **{k: v for k, v in clf_tables.items() if k != "test_predictions"},

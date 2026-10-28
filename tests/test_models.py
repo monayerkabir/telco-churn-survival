@@ -1,23 +1,15 @@
 """Smoke tests: every model fits and predicts sensibly on synthetic data, and the full
 training pipeline runs end to end and is reproducible."""
 
-import dataclasses
 import json
 
 import numpy as np
 import pytest
 
 from churn import survival
-from churn.config import CONFIG, LATEST_POINTER
+from churn.config import LATEST_POINTER
 from churn.train import make_calibrated, make_lgbm_pipeline, make_logistic_pipeline, run
-
-TINY = dataclasses.replace(
-    CONFIG,
-    split=dataclasses.replace(CONFIG.split, n_splits=3),
-    tuning=dataclasses.replace(CONFIG.tuning, n_trials=2),
-    classification=dataclasses.replace(CONFIG.classification, n_bootstrap=20),
-    survival=dataclasses.replace(CONFIG.survival, rsf_n_estimators=10),
-)
+from conftest import TINY_CONFIG as TINY
 
 
 @pytest.mark.parametrize(

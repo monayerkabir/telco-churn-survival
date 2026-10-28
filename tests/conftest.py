@@ -3,12 +3,25 @@ mimics the raw CSV format, including its quirks (text TotalCharges with blanks).
 
 from __future__ import annotations
 
+import dataclasses
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 
-from churn.config import ADDON_SERVICE_COLS
+from churn.bundle import export_bundle
+from churn.config import ADDON_SERVICE_COLS, CONFIG
 from churn.data import clean_data
+
+# Small budgets so a full training run on synthetic data takes a few seconds.
+TINY_CONFIG = dataclasses.replace(
+    CONFIG,
+    split=dataclasses.replace(CONFIG.split, n_splits=3),
+    tuning=dataclasses.replace(CONFIG.tuning, n_trials=2),
+    classification=dataclasses.replace(CONFIG.classification, n_bootstrap=20),
+    survival=dataclasses.replace(CONFIG.survival, rsf_n_estimators=10),
+)
 
 
 def make_raw_telco(n: int = 400, seed: int = 0) -> pd.DataFrame:
@@ -75,3 +88,45 @@ def raw_df() -> pd.DataFrame:
 @pytest.fixture
 def clean_df(raw_df: pd.DataFrame) -> pd.DataFrame:
     return clean_data(raw_df)
+
+
+@pytest.fixture(scope="session")
+def trained_run(tmp_path_factory) -> Path:
+    """One full training run on synthetic data, shared by the inference/API/app tests."""
+    from churn.train import run  # imports optuna; keep it out of collection for other tests
+
+    df = clean_data(make_raw_telco())
+    models_dir = tmp_path_factory.mktemp("models")
+    return run(df, TINY_CONFIG, models_dir=models_dir, reports_dir=None, data_path=None)
+
+
+@pytest.fixture(scope="session")
+def tiny_bundle(trained_run: Path, tmp_path_factory) -> Path:
+    """Deployment bundle exported from :func:`trained_run`."""
+    return export_bundle(trained_run, tmp_path_factory.mktemp("bundle") / "model_bundle")
+
+
+@pytest.fixture
+def customer() -> dict:
+    """A valid customer record in the API/inference input format."""
+    return {
+        "gender": "Female",
+        "SeniorCitizen": "No",
+        "Partner": "Yes",
+        "Dependents": "No",
+        "tenure": 5,
+        "PhoneService": "Yes",
+        "MultipleLines": "No",
+        "InternetService": "Fiber optic",
+        "OnlineSecurity": "No",
+        "OnlineBackup": "Yes",
+        "DeviceProtection": "No",
+        "TechSupport": "No",
+        "StreamingTV": "Yes",
+        "StreamingMovies": "No",
+        "Contract": "Month-to-month",
+        "PaperlessBilling": "Yes",
+        "PaymentMethod": "Electronic check",
+        "MonthlyCharges": 89.5,
+        "TotalCharges": 447.5,
+    }
