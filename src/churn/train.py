@@ -10,7 +10,7 @@
 6. Versioned artifacts and ``metrics.json`` written to ``models/<version>/``.
 
 Usage:
-    python -m churn.train [--n-trials N] [--models-dir DIR]
+    python -m churn.train [--n-trials N] [--models-dir DIR] [--no-report]
 """
 
 from __future__ import annotations
@@ -500,6 +500,11 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Train churn classification + survival models.")
     parser.add_argument("--n-trials", type=int, default=None, help="override the Optuna budget")
     parser.add_argument("--models-dir", type=Path, default=MODELS_DIR)
+    parser.add_argument(
+        "--no-report",
+        action="store_true",
+        help="don't copy metrics.json to reports/ (for throwaway runs, e.g. in CI)",
+    )
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -508,7 +513,8 @@ def main(argv: list[str] | None = None) -> None:
         cfg = dataclasses.replace(
             cfg, tuning=dataclasses.replace(cfg.tuning, n_trials=args.n_trials)
         )
-    run(load_clean_data(), cfg, models_dir=args.models_dir)
+    reports_dir = None if args.no_report else REPORTS_DIR
+    run(load_clean_data(), cfg, models_dir=args.models_dir, reports_dir=reports_dir)
 
 
 if __name__ == "__main__":
