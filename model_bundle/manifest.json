@@ -1,6 +1,6 @@
 {
-  "source_run": "20261028T092002Z-a858896",
-  "git_sha": "a858896f6f5358799696315a0b46e1c9ffab45e5",
+  "source_run": "20261028T111359Z-e4e7657",
+  "git_sha": "e4e76578f284b7c5809443226d5aa7982c49dcb7",
   "champion": "lgbm_tuned",
   "survival_model": "Cox PH (stratified by contract)",
   "packages": {
@@ -17,7 +17,7 @@
     "base_classifiers.joblib": "4a7260e3f0a59ce63654c1aedceec590edc0c0b79917a0c0f8a99facb081f219",
     "classifier.joblib": "6d93509d7ed172aae4298455bb07a228276ac969c8d14ac7632db813f226319d",
     "feature_means.json": "59bf1f6aa97d7524ac8fed04c5aecd0ec444cb09f4866f41b71e3090515f748a",
-    "metrics.json": "2af7357d53a5038be20acb200e8fbf4303d3f87d7392b40122ceca3393ae40cb",
-    "survival_models.joblib": "0c2b4b6c9cd5086eb3052f84540cf760c8e32122d9e561f679cabeddf6c4e0c6"
+    "metrics.json": "118cf0b9a667411b915760a1525fdd89f67e59aaf756ad3be88a0a4d61f7b21b",
+    "survival_models.joblib": "e0851ac535ebc0570b6c7d20c10f1f0c2d4b2bf278d47e0d2aa74ff7e7b94140"
   }
 }

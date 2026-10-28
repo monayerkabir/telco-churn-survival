@@ -41,6 +41,11 @@ from churn.inference import FEATURE_COLUMNS, ChurnPredictor
 
 MODEL_DIR = os.environ.get("CHURN_MODEL_DIR", str(BUNDLE_DIR))
 DATA_PATH = os.environ.get("CHURN_DATA_PATH", str(RAW_DATA_PATH))
+MODEL_LABELS = {  # display names for the training run's model keys
+    "logreg": "Logistic regression",
+    "lgbm_default": "LightGBM",
+    "lgbm_tuned": "LightGBM (Optuna-tuned)",
+}
 SEGMENTS = [  # attributes with at most four levels (the validated palette's limit)
     "Contract",
     "InternetService",
@@ -93,7 +98,11 @@ def load_customers(data_path: str) -> pd.DataFrame:
 
 @st.cache_data(show_spinner="Scoring held-out customers…")
 def score_portfolio(_predictor: ChurnPredictor, model_version: str, data_path: str) -> pd.DataFrame:
-    """Hold-out customers (same split as training) with their model scores."""
+    """Hold-out customers (same split as training) with their model scores.
+
+    ``_predictor`` is not hashed by Streamlit (leading underscore), so ``model_version``
+    is what invalidates the cache when a different model is loaded.
+    """
     _, test = split_train_test(load_customers(data_path))
     scores = _predictor.score(_predictor.prepare(test[FEATURE_COLUMNS]))
     return pd.concat([test, scores], axis=1)
@@ -103,7 +112,10 @@ def score_portfolio(_predictor: ChurnPredictor, model_version: str, data_path: s
 def segment_curves(
     _predictor: ChurnPredictor, model_version: str, data_path: str, segment: str, source: str
 ) -> pd.DataFrame:
-    """Long frame (level, month, survival) of observed or predicted curves per level."""
+    """Long frame (level, month, survival) of observed or predicted curves per level.
+
+    ``model_version`` is the cache key for the unhashed ``_predictor``.
+    """
     customers = load_customers(data_path)
     rows = []
     if source == "observed":
@@ -470,7 +482,7 @@ def sidebar(predictor: ChurnPredictor) -> None:
     with st.sidebar:
         st.markdown("### Model card")
         st.markdown(
-            f"- **Classifier:** {predictor.champion.replace('_', ' ')}, test ROC-AUC "
+            f"- **Classifier:** {MODEL_LABELS.get(predictor.champion, predictor.champion)}, test ROC-AUC "
             f"{test['roc_auc']['value']:.3f}\n"
             f"- **Survival:** {predictor.survival_model_name}, C-index {surv['c_index']:.3f}\n"
             f"- **Retention threshold:** {predictor.threshold:.2f}\n"
