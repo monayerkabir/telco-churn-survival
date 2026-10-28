@@ -236,7 +236,7 @@ class ChurnPredictor:
         X = self.prepare(customers)
         scores = self.score(X)
         base, contrib = self.explain(X)
-        display = _display_values(X)
+        display = display_values(X)
         curves = (
             survival.conditional_survival(self.survival_curves(X), X[DURATION_COL])
             if include_curve
@@ -309,7 +309,7 @@ class ChurnPredictor:
         return results
 
 
-def _display_values(X: pd.DataFrame) -> pd.DataFrame:
+def display_values(X: pd.DataFrame) -> pd.DataFrame:
     """Human-readable value of every explained attribute: raw categories, numeric inputs
     and engineered features (e.g. ``avg_monthly_charge``)."""
     engineered = TelcoFeatureEngineer(include_tenure=True).fit_transform(X)
