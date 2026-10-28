@@ -178,8 +178,8 @@ def train_classification(
     train_df: pd.DataFrame, test_df: pd.DataFrame, cfg: Config = CONFIG
 ) -> tuple[dict, dict, dict]:
     """Returns (metrics, fitted models, tables to persist)."""
-    X_train, y_train = train_df, train_df[TARGET_COL]
-    X_test, y_test = test_df, test_df[TARGET_COL]
+    X_train, y_train = train_df.drop(columns=TARGET_COL), train_df[TARGET_COL]
+    X_test, y_test = test_df.drop(columns=TARGET_COL), test_df[TARGET_COL]
     cv = cv_splitter(cfg)
 
     logger.info("Tuning LightGBM with Optuna (%d trials)", cfg.tuning.n_trials)
