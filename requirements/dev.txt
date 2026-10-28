@@ -12,6 +12,6 @@ nbformat==5.11.1
 
 # Tests and linting
 pytest==9.2.0
-httpx==0.28.1
+httpx2==2.16.0  # starlette.testclient backend
 ruff==0.17.3
 black[jupyter]==26.10.1

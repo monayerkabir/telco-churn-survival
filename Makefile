@@ -1,11 +1,11 @@
 .DEFAULT_GOAL := help
-.PHONY: help install data train bundle test lint format notebooks all clean
+.PHONY: help install data train bundle api app test lint format notebooks all clean
 
 VENV      ?= .venv
 PYTHON    ?= $(VENV)/bin/python
 RAW_DATA  := data/raw/Telco-Customer-Churn.csv
 NOTEBOOKS := $(sort $(wildcard notebooks/*.ipynb))
-LINT_PATHS := src tests scripts notebooks
+LINT_PATHS := src api tests scripts notebooks
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
@@ -26,6 +26,9 @@ train: $(RAW_DATA)  ## Train all models; write versioned artifacts + metrics.jso
 
 bundle:  ## Export the latest training run to the committed deployment bundle (model_bundle/)
 	$(PYTHON) -m churn.bundle
+
+api:  ## Serve the API on http://localhost:8000 (docs at /docs) from model_bundle/
+	$(PYTHON) -m uvicorn api.main:app --reload --port 8000
 
 test:  ## Run the test suite (offline, synthetic data)
 	$(PYTHON) -m pytest
