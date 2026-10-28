@@ -288,6 +288,7 @@ def evaluate_business(
     hindsight = business.optimal_threshold(curve_test)
     rar = business.revenue_at_risk(p, charges, bcfg.horizon_months)
     targeted = p.to_numpy() >= threshold
+    value_aware = business.value_aware_targets(p, charges, bcfg)  # per-customer breakeven
 
     metrics = {
         "assumptions": dataclasses.asdict(bcfg),
@@ -309,6 +310,9 @@ def evaluate_business(
             "revenue_at_risk_total": float(rar.sum()),
             "revenue_at_risk_targeted": float(rar[targeted].sum()),
             "forecast_profit": business.expected_profit(p, p, charges, threshold, bcfg),
+            "value_aware_n_targeted": int(value_aware.sum()),
+            "value_aware_churners_reached": int(y.to_numpy()[value_aware].sum()),
+            "value_aware_profit": business.policy_profit(y, value_aware, charges, bcfg),
         },
     }
     tables = {"profit_curve_oof": curve_oof, "profit_curve_test": curve_test}

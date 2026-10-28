@@ -5,8 +5,10 @@ from churn.business import (
     breakeven_probability,
     expected_profit,
     optimal_threshold,
+    policy_profit,
     profit_curve,
     revenue_at_risk,
+    value_aware_targets,
 )
 from churn.config import BusinessConfig
 
@@ -76,3 +78,14 @@ def test_breakeven_probability_has_zero_expected_profit():
     charges = np.array([40.0])
     p_star = breakeven_probability(charges, CFG)
     assert expected_profit(p_star, p_star, charges, 0.0, CFG) == pytest.approx(0.0)
+
+
+def test_value_aware_targets_only_profitable_customers():
+    p = np.array([0.2, 0.2, 0.05])
+    charges = np.array([100.0, 10.0, 100.0])
+    # breakeven p* = 20 / (0.5 * charges * 10): 0.04 for $100 customers, 0.4 for $10 ones
+    targeted = value_aware_targets(p, charges, CFG)
+    np.testing.assert_array_equal(targeted, [True, False, True])
+    # Ex-ante, the value-aware rule is never worse than any global threshold.
+    best_threshold = max(expected_profit(p, p, charges, t, CFG) for t in [0, 0.05, 0.1, 0.2, 1.1])
+    assert policy_profit(p, targeted, charges, CFG) >= best_threshold

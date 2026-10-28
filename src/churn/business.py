@@ -48,11 +48,16 @@ def expected_profit(
         monthly_charges: per-customer monthly revenue.
         threshold: target customers whose score is at least this value.
     """
-    churn = np.asarray(churn, dtype=float)
     targeted = np.asarray(p_churn, dtype=float) >= threshold
+    return policy_profit(churn, targeted, monthly_charges, cfg)
+
+
+def policy_profit(churn, targeted, monthly_charges, cfg: BusinessConfig = CONFIG.business) -> float:
+    """Expected profit of offering the incentive to an arbitrary set of customers."""
+    churn = np.asarray(churn, dtype=float)
     value = customer_value(monthly_charges, cfg.horizon_months)
     gain = churn * cfg.offer_success_rate * value - cfg.offer_cost
-    return float(gain[targeted].sum())
+    return float(gain[np.asarray(targeted, dtype=bool)].sum())
 
 
 def profit_curve(
@@ -97,8 +102,13 @@ def optimal_threshold(curve: pd.DataFrame) -> pd.Series:
 def breakeven_probability(monthly_charges, cfg: BusinessConfig = CONFIG.business) -> np.ndarray:
     """Churn probability above which targeting a given customer has positive expected value.
 
-    From ``p * success_rate * value - cost > 0``. Shown in the notebook to explain why a
-    single global threshold is an approximation when customer value varies.
+    From ``p * success_rate * value - cost > 0``. A single global threshold approximates
+    this per-customer rule; the two coincide only if every customer has the same value.
     """
     value = customer_value(monthly_charges, cfg.horizon_months)
     return cfg.offer_cost / (cfg.offer_success_rate * value)
+
+
+def value_aware_targets(p_churn, monthly_charges, cfg: BusinessConfig = CONFIG.business):
+    """Target exactly the customers whose own expected profit is positive."""
+    return np.asarray(p_churn, dtype=float) > breakeven_probability(monthly_charges, cfg)
