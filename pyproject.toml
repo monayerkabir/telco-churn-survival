@@ -71,6 +71,7 @@ ignore = ["E501"]  # line length is enforced by black
 
 [tool.ruff.lint.per-file-ignores]
 "notebooks/*.ipynb" = ["E402", "B018"]  # imports after markdown cells; bare expressions display values
+"app/streamlit_app.py" = ["E402"]  # imports follow the sys.path setup for Streamlit Cloud
 
 [tool.ruff.lint.isort]
 known-first-party = ["churn", "api", "app"]

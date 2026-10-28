@@ -5,7 +5,7 @@ VENV      ?= .venv
 PYTHON    ?= $(VENV)/bin/python
 RAW_DATA  := data/raw/Telco-Customer-Churn.csv
 NOTEBOOKS := $(sort $(wildcard notebooks/*.ipynb))
-LINT_PATHS := src api tests scripts notebooks
+LINT_PATHS := src api app tests scripts notebooks
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
@@ -29,6 +29,9 @@ bundle:  ## Export the latest training run to the committed deployment bundle (m
 
 api:  ## Serve the API on http://localhost:8000 (docs at /docs) from model_bundle/
 	$(PYTHON) -m uvicorn api.main:app --reload --port 8000
+
+app:  ## Run the Streamlit app on http://localhost:8501 from model_bundle/
+	$(PYTHON) -m streamlit run app/streamlit_app.py
 
 test:  ## Run the test suite (offline, synthetic data)
 	$(PYTHON) -m pytest
