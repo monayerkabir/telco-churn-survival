@@ -41,6 +41,11 @@ from churn.inference import FEATURE_COLUMNS, ChurnPredictor
 
 MODEL_DIR = os.environ.get("CHURN_MODEL_DIR", str(BUNDLE_DIR))
 DATA_PATH = os.environ.get("CHURN_DATA_PATH", str(RAW_DATA_PATH))
+MODEL_LABELS = {  # display names for the training run's model keys
+    "logreg": "Logistic regression",
+    "lgbm_default": "LightGBM",
+    "lgbm_tuned": "LightGBM (Optuna-tuned)",
+}
 SEGMENTS = [  # attributes with at most four levels (the validated palette's limit)
     "Contract",
     "InternetService",
@@ -477,7 +482,7 @@ def sidebar(predictor: ChurnPredictor) -> None:
     with st.sidebar:
         st.markdown("### Model card")
         st.markdown(
-            f"- **Classifier:** {predictor.champion.replace('_', ' ')}, test ROC-AUC "
+            f"- **Classifier:** {MODEL_LABELS.get(predictor.champion, predictor.champion)}, test ROC-AUC "
             f"{test['roc_auc']['value']:.3f}\n"
             f"- **Survival:** {predictor.survival_model_name}, C-index {surv['c_index']:.3f}\n"
             f"- **Retention threshold:** {predictor.threshold:.2f}\n"
