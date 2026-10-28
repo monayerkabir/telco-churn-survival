@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "telco-churn-survival"
+version = "0.1.0"
+description = "Predict whether and when telecom customers churn, and who to target for retention."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+# Loose lower bounds for the library; requirements.txt pins the exact tested versions.
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "scikit-learn>=1.6",
+    "lightgbm>=4.5",
+    "optuna>=4.0",
+    "shap>=0.46",
+    "lifelines>=0.29",
+    "scikit-survival>=0.24",
+    "pandera>=0.24",
+    "matplotlib>=3.9",
+    "joblib>=1.4",
+]
+
+[project.optional-dependencies]
+notebooks = ["ipykernel", "nbconvert", "nbclient", "nbformat"]
+dev = ["pytest>=8", "ruff>=0.6", "black[jupyter]>=24"]
+
+[project.scripts]
+churn-train = "churn.train:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    # Third-party deprecation noise that is not actionable from this project.
+    "ignore::DeprecationWarning:shap.*",
+    "ignore::PendingDeprecationWarning:shap.*",
+    "ignore::DeprecationWarning:lifelines.*",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "NPY", # numpy-specific rules (e.g. legacy np.random usage)
+]
+ignore = ["E501"]  # line length is enforced by black
+
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*.ipynb" = ["E402", "B018"]  # imports after markdown cells; bare expressions display values
+
+[tool.ruff.lint.isort]
+known-first-party = ["churn"]
