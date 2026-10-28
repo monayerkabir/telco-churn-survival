@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install data train bundle api app test lint format notebooks all clean
+.PHONY: help install data train bundle api app docker up test lint format notebooks all clean
 
 VENV      ?= .venv
 PYTHON    ?= $(VENV)/bin/python
@@ -32,6 +32,12 @@ api:  ## Serve the API on http://localhost:8000 (docs at /docs) from model_bundl
 
 app:  ## Run the Streamlit app on http://localhost:8501 from model_bundle/
 	$(PYTHON) -m streamlit run app/streamlit_app.py
+
+docker:  ## Build the api and app images
+	docker compose build
+
+up:  ## Run the API (:8000) and app (:8501) in containers
+	docker compose up --build
 
 test:  ## Run the test suite (offline, synthetic data)
 	$(PYTHON) -m pytest
