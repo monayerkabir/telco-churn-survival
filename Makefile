@@ -1,20 +1,28 @@
 .DEFAULT_GOAL := help
 .PHONY: help install data train bundle api app docker up test lint format notebooks all clean
+.NOTPARALLEL:  # the targets form one sequential pipeline
 
-VENV      ?= .venv
-PYTHON    ?= $(VENV)/bin/python
-RAW_DATA  := data/raw/Telco-Customer-Churn.csv
-NOTEBOOKS := $(sort $(wildcard notebooks/*.ipynb))
+PYTHON_BIN ?= python3.11
+VENV       ?= .venv
+PYTHON     ?= $(VENV)/bin/python
+INSTALLED  := $(VENV)/.installed
+RAW_DATA   := data/raw/Telco-Customer-Churn.csv
+NOTEBOOKS  := $(sort $(wildcard notebooks/*.ipynb))
 LINT_PATHS := src api app tests scripts notebooks
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
 
-install:  ## Create .venv (Python 3.11) and install pinned dependencies + the package
-	python3.11 -m venv $(VENV)
+$(INSTALLED): requirements.txt requirements/serve.txt requirements/dev.txt pyproject.toml
+	$(PYTHON_BIN) -m venv $(VENV)
 	$(PYTHON) -m pip install --upgrade pip
 	$(PYTHON) -m pip install -r requirements.txt
 	$(PYTHON) -m pip install -e . --no-deps
+	# Register this interpreter as the notebooks' "python3" kernel.
+	$(PYTHON) -m ipykernel install --sys-prefix --name python3 --display-name "Python 3 (ipykernel)"
+	touch $@
+
+install: $(INSTALLED)  ## Create .venv (Python 3.11) with the pinned dependencies (re-runs when they change)
 
 $(RAW_DATA):
 	$(PYTHON) scripts/download_data.py
@@ -53,8 +61,8 @@ format:  ## Auto-fix lint issues and format code
 notebooks:  ## Re-execute all notebooks in place (requires `make train` first)
 	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace $(NOTEBOOKS)
 
-all: data train notebooks test lint  ## Full pipeline: data -> train -> notebooks -> checks
+all: install data train notebooks test lint  ## From a fresh clone: install -> data -> train -> notebooks -> checks
 
-clean:  ## Remove caches (keeps data/ and models/)
+clean:  ## Remove caches (keeps .venv, data/ and models/)
 	rm -rf .pytest_cache .ruff_cache build dist src/*.egg-info
 	find . -type d -name __pycache__ -not -path "./$(VENV)/*" -exec rm -rf {} +
