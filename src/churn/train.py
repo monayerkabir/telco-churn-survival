@@ -72,12 +72,6 @@ LGBM_FIXED_PARAMS = {
     "force_row_wise": True,
 }
 
-MODEL_NAMES = {
-    "logreg": "Logistic regression",
-    "lgbm_default": "LightGBM (default)",
-    "lgbm_tuned": "LightGBM (tuned)",
-}
-
 
 # --------------------------------------------------------------------------------------
 # Model factories

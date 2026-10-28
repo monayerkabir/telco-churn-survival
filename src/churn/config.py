@@ -51,8 +51,6 @@ TARGET_COL = "Churn"  # 1 = churned (event), 0 = still active (censored)
 DURATION_COL = "tenure"  # months with the company
 MAX_TENURE = 72  # dataset follow-up is capped at 72 months
 
-NUMERIC_COLS = ["tenure", "MonthlyCharges", "TotalCharges"]
-
 # Allowed levels per categorical column, after cleaning. The first level of each list is
 # the reference category when a model needs one dropped (e.g. Cox hazard ratios).
 CATEGORY_LEVELS: dict[str, list[str]] = {
